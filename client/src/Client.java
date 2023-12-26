@@ -1,44 +1,68 @@
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Client {
-    public static void main(String[] args) throws Exception {
-        try {
-            // int PORT = Integer.parseInt(args[0]);
-            int PORT = 8080;
-            InetAddress inetAddress = InetAddress.getByName("localhost");
-            System.out.println("IP address: " + inetAddress);
-            InetSocketAddress socketAddress = new InetSocketAddress(inetAddress, PORT);
-            Socket socket = new Socket();
-            socket.connect(socketAddress, 10000);
-            InetAddress inadr;
-            if ((inadr = socket.getInetAddress()) != null) {
-                System.out.println("Connect to " + inadr);
-            } else {
-                System.out.println("Connection failed");
-                socket.close();
-                return;
-            }
+    private Socket socket;
+    private ObjectOutputStream out;
+    private ObjectInputStream in;
+    private Set<String> files;
 
-            String msg = "test";
-            PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
-                    true);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            writer.println(msg);
-            writer.flush();
-            String getLine = reader.readLine();
-            System.out.println("Message from Server: " + getLine);
-            writer.close();
-            socket.close();
-        } catch (IOException error) {
-            error.printStackTrace();
+    public Client(Socket sock) {
+        this.socket = sock;
+        this.files = new HashSet<>();
+    }
+
+    /**
+     * this is a function for opening a file
+     * @param name file name
+     * @param path file path
+     * @param mode open option
+     */
+    public void open(String name, String path, String mode) {
+        if (files.contains(path)) {
+            try {
+                File f = new File("./" + path);
+                FileReader fr = new FileReader(f);
+                BufferedReader br = new BufferedReader(fr);
+                String str;
+                while ((str = br.readLine()) != null) {
+                    System.out.println(str);
+                }
+                br.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+        String[] file = new String[4];
+        try {
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
+            String[] msg = {"open", name, path, mode};
+            out.writeObject(msg);
+            out.flush();
+            file = (String[])in.readObject();
+            System.out.println(file[0]);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (mode == "r") {
+            try {
+                File f = new File("./" + path);
+                FileWriter fw = new FileWriter(f);
+                fw.write(file[0]);
+                fw.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
