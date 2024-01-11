@@ -140,7 +140,6 @@ public class Main {
         }
         /* <fd, "name:mode:flag:"> */
         String[] info = fd_dict.get(fd).info.split(":");
-        File f = fd_dict.get(fd).file;
         String name = info[0];
         String mode = info[1];
         System.out.println("file_name = " + name);
@@ -153,6 +152,7 @@ public class Main {
             return -1;
         }
 
+        File f = fd_dict.get(fd).file;
         try{
             FileReader fr = new FileReader(f);
             int ch;
@@ -182,7 +182,6 @@ public class Main {
         }
         /* <fd, "name:mode:flag:"> */
         String[] info = fd_dict.get(fd).info.split(":");
-        File f = fd_dict.get(fd).file;
         String name = info[0];
         String mode = info[1];
         System.out.println("file_name = " + name);
@@ -195,6 +194,7 @@ public class Main {
             return -1;
         }
 
+        File f = fd_dict.get(fd).file;
         try{
             FileWriter fw = new FileWriter(f);
             if (nbytes > buf[0].length()){
