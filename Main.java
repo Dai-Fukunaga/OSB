@@ -1,6 +1,5 @@
 import java.util.*;
 import java.io.*;
-import java.net.*;
 
 public class Main {
     public static Map<Integer, MyFile> fd_dict = new HashMap<>();
@@ -8,14 +7,15 @@ public class Main {
     /* <fd, "name:mode:flag:flag:"> */
 
     public static void main(String[] args) {
-        MyFile file1 = new MyFile("stdin:a:O_RDONLY:", null);
+        MyFile file1 = new MyFile("stdin:a:O_RDONLY:", null); /*stdinからのreadは未実装 */
         fd_dict.put(0, file1);
-        MyFile file2 = new MyFile("stdout:a:O_WRONLY:", null);
+        File f2 = new File("/dev/pts/0");
+        MyFile file2 = new MyFile("stdout:a:O_WRONLY:", f2); /*stdoutへのwriteはできる */
         fd_dict.put(1, file2);
-        MyFile file3 = new MyFile("stderr:a:O_WRONLY:", null);
+        MyFile file3 = new MyFile("stderr:a:O_WRONLY:", f2); /*stderrへのwriteはできる */
         fd_dict.put(2, file3);
         int i = 0;
-        if (myClose(1) == -1){
+        if (myClose(2) == -1){
             System.err.println("close err");
         }
         i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_CREAT,"a");
@@ -26,13 +26,18 @@ public class Main {
         if (myClose(i) == -1){
             System.err.println("close err");
         }
-        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_CREAT,"a");
+        i = myOpen("abc.txt",MyFlags.O_RDWR | MyFlags.O_CREAT,"a");
         System.out.println("fd = " + i);
         String[] buf = new String[] {""}; /*参照渡しのためlistに */
         if (myRead(i, buf,3) != 3){
             System.err.println("read err");
         }
         System.out.println("buf = " + buf[0]);
+
+        buf[0] = "hoge";
+        if (myWrite(1, buf, buf[0].length()) != 4){
+            System.err.println("write err");
+        }
     }
 
     public static int myOpen(String name,int flags,String mode) {
@@ -123,7 +128,6 @@ public class Main {
         if (fd_dict.get(fd) != null) {
             System.out.println("close \""+fd_dict.get(fd)+"\"");
             fd_dict.put(fd, null);
-            /*この辺で実際にファイルを閉じる（保存？） */
             return 0;
         }
         return -1;
@@ -172,6 +176,40 @@ public class Main {
 
     public static int myWrite (int fd , String[] buf, int nbytes) {
         /* String buf is const */
+        if (fd_dict.get(fd) == null) {
+            System.err.println("not found fd = " + fd);
+            return -1;
+        }
+        /* <fd, "name:mode:flag:"> */
+        String[] info = fd_dict.get(fd).info.split(":");
+        File f = fd_dict.get(fd).file;
+        String name = info[0];
+        String mode = info[1];
+        System.out.println("file_name = " + name);
+        String[] flags = new String[info.length-2];
+        for (int i=2; i<info.length; i++) {
+            flags[i-2] = info[i];
+        }
+        if (flags[0].equals("O_RDONLY") == true) {
+            System.err.println("this file is not writable");
+            return -1;
+        }
+
+        try{
+            FileWriter fw = new FileWriter(f);
+            if (nbytes > buf[0].length()){
+                System.err.println("nbytes > buf[0].length");
+                fw.write(buf[0]);
+            } else if (nbytes < buf[0].length()) {
+                fw.write(buf[0].substring(0, nbytes));
+            } else {
+                fw.write(buf[0]);
+            }
+            fw.close();
+        } catch (IOException e) {
+            System.err.println(e);
+            return -1;
+        }
         return nbytes;
     }
 }
