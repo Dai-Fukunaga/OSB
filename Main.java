@@ -15,15 +15,15 @@ public class Main {
         if (myClose(1) == -1){
             System.err.println("close err");
         }
-        i = myOpen("abc",MyFlags.O_RDONLY | MyFlags.O_TRUNC,"a");
+        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_TRUNC,"a");
         System.out.println("fd = " + i);
-        i = myOpen("abc",MyFlags.O_RDONLY | MyFlags.O_TRUNC,"a");
+        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_TRUNC,"a");
         System.out.println("fd = " + i);
 
         if (myClose(i) == -1){
             System.err.println("close err");
         }
-        i = myOpen("abc",MyFlags.O_RDONLY | MyFlags.O_TRUNC,"a");
+        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_TRUNC,"a");
         System.out.println("fd = " + i);
         String[] buf = new String[] {""}; /*参照渡しのためlistに */
         i = myRead(i, buf,10);
@@ -52,6 +52,8 @@ public class Main {
             System.err.println("flags_sum = " + sum);
             return -1;
         }
+        Boolean F_create = false;
+        Boolean F_trunc = false;
 
         /*info */
         String info = "";
@@ -63,11 +65,39 @@ public class Main {
         for (int i=flags_bin_len-1; i>=0; i--) {
             if (flags_bin.charAt(i) == '1') {
                 System.out.print( MyFlags.flags[flags_bin_len-i-1]+"\t");
-                info += MyFlags.flags[flags_bin_len-i-1] + ":";
+                if (MyFlags.flags[flags_bin_len-i-1].equals("O_CREAT") == true) {
+                    F_create = true;
+                } else if (MyFlags.flags[flags_bin_len-i-1].equals("O_TRUNC") == true) {
+                    F_trunc = true;
+                } else {
+                    info += MyFlags.flags[flags_bin_len-i-1] + ":";
+                }
             }
         }
         System.out.println();
-        /*この辺で実際にファイルを開ける */
+        /*実際にファイルを開ける（作る） */
+        File f;
+        try{
+            f = new File(name);
+            if (!f.exists() && F_create) {
+                boolean result = f.createNewFile();
+                if (!result) {
+                    return -1;
+                }
+            } else if (!f.exists()) {
+                System.err.println("file not found");
+                return -1;
+            } else if (F_trunc) {
+                f.delete();
+                boolean result = f.createNewFile();
+                if (!result) {
+                    return -1;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println(e);
+            return -1;
+        }
 
         /* fd_dict */
         int j=0;
