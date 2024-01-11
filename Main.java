@@ -3,30 +3,35 @@ import java.io.*;
 import java.net.*;
 
 public class Main {
-    public static Map<Integer, String> fd_dict = new HashMap<>();
+    public static Map<Integer, MyFile> fd_dict = new HashMap<>();
     /* <fd, "name:mode:flag:"> */
     /* <fd, "name:mode:flag:flag:"> */
 
     public static void main(String[] args) {
-        fd_dict.put(0, "stdin:a:O_RDONLY:");
-        fd_dict.put(1, "stdout:a:O_WRONLY:");
-        fd_dict.put(2, "stderr:a:O_WRONLY:");
+        MyFile file1 = new MyFile("stdin:a:O_RDONLY:", null);
+        fd_dict.put(0, file1);
+        MyFile file2 = new MyFile("stdout:a:O_WRONLY:", null);
+        fd_dict.put(1, file2);
+        MyFile file3 = new MyFile("stderr:a:O_WRONLY:", null);
+        fd_dict.put(2, file3);
         int i = 0;
         if (myClose(1) == -1){
             System.err.println("close err");
         }
-        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_TRUNC,"a");
+        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_CREAT,"a");
         System.out.println("fd = " + i);
-        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_TRUNC,"a");
+        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_CREAT,"a");
         System.out.println("fd = " + i);
 
         if (myClose(i) == -1){
             System.err.println("close err");
         }
-        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_TRUNC,"a");
+        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_CREAT,"a");
         System.out.println("fd = " + i);
         String[] buf = new String[] {""}; /*参照渡しのためlistに */
-        i = myRead(i, buf,10);
+        if (myRead(i, buf,3) != 3){
+            System.err.println("read err");
+        }
         System.out.println("buf = " + buf[0]);
     }
 
@@ -75,6 +80,7 @@ public class Main {
             }
         }
         System.out.println();
+
         /*実際にファイルを開ける（作る） */
         File f;
         try{
@@ -98,16 +104,17 @@ public class Main {
             System.err.println(e);
             return -1;
         }
+        MyFile info_file = new MyFile(info, f);
 
         /* fd_dict */
         int j=0;
         for (j=0; j<fd_dict.size(); j++) {
             if (fd_dict.get(j) == null) {
-                fd_dict.put(j, info);
+                fd_dict.put(j, info_file);
                 return j;
             }
         }
-        fd_dict.put(j, info);
+        fd_dict.put(j, info_file);
         return j;
     }
 
@@ -128,9 +135,11 @@ public class Main {
             return -1;
         }
         /* <fd, "name:mode:flag:"> */
-        String[] info = fd_dict.get(fd).split(":");
+        String[] info = fd_dict.get(fd).info.split(":");
+        File f = fd_dict.get(fd).file;
         String name = info[0];
         String mode = info[1];
+        System.out.println("file_name = " + name);
         String[] flags = new String[info.length-2];
         for (int i=2; i<info.length; i++) {
             flags[i-2] = info[i];
@@ -140,7 +149,24 @@ public class Main {
             return -1;
         }
 
-        buf[0] = "hello world";
+        try{
+            FileReader fr = new FileReader(f);
+            int ch;
+            /*while((ch = fr.read()) != -1){*/
+            for (int i=0; i<nbytes; i++) {
+                ch = fr.read();
+                if (ch == -1) {
+                    System.err.println("*** stack smashing detected ***: terminated");
+                    System.err.println("Aborted");
+                    break;
+                }
+                buf[0] += (char)ch;
+            }
+            fr.close();
+        } catch (IOException e) {
+            System.err.println(e);
+            return -1;
+        }
         return nbytes;
     }
 
