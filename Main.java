@@ -29,7 +29,7 @@ public class Main {
         //if (myClose(i) == -1){
         //    System.err.println("close err");
         //}
-        i = myOpen("abc.txt",MyFlags.O_RDWR);
+        i = myOpen("abc.txt",MyFlags.O_RDWR | MyFlags.O_APPEND);
         System.out.println("fd = " + i);
         String[] buf = new String[] {""}; /*参照渡しのためlistに */
         //if (myRead(i, buf,3) != 3){
@@ -204,6 +204,9 @@ public class Main {
                 fw = new FileWriter(f, true);
                 if (nbytes > tmp_buf.length()){
                     System.err.println("nbytes > buf[0].length");
+                    for (int i=0; i< nbytes-tmp_buf.length(); i++) {
+                            tmp_buf += (char)0;
+                    }
                     fw.write(tmp_buf);
                 } else if (nbytes < tmp_buf.length()) {
                     fw.write(tmp_buf, 0, nbytes);
@@ -219,8 +222,8 @@ public class Main {
                         tmp_buf = tmp_buf.substring(0, nbytes);
                     } else if (nbytes > tmp_buf.length()){
                         System.err.println("nbytes > buf[0].length");
-                        for (int i=0; i<(nbytes+add_bytes)-tmp_buf.length(); i++) {
-                        tmp_buf += (char)0;
+                        for (int i=0; i< nbytes-tmp_buf.length(); i++) {
+                            tmp_buf += (char)0;
                         }
                     }
                     FileReader fr = new FileReader(f);
