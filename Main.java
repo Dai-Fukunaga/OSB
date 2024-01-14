@@ -32,14 +32,17 @@ public class Main {
         i = myOpen("abc.txt",MyFlags.O_RDWR | MyFlags.O_APPEND);
         System.out.println("fd = " + i);
         String[] buf = new String[] {""}; /*参照渡しのためlistに */
-        //if (myRead(i, buf,3) != 3){
-        //    System.err.println("read err");
-        //}
-        //System.out.println("buf = " + buf[0]);
+        if (myRead(i, buf,3) != 3){
+            System.err.println("read err");
+        }
+        System.out.println("buf = " + buf[0]);
 
         buf[0] = "hoge";
-        if (myWrite(i, buf,buf[0].length()+1 ) != buf[0].length()+1){
+        if (myWrite(i, buf,buf[0].length()) != buf[0].length()){
             System.err.println("write err");
+        }
+        if (myClose(i) == -1){
+            System.err.println("close err");
         }
     }
 
