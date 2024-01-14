@@ -36,7 +36,7 @@ public class Main {
         System.out.println("buf = " + buf[0]);
 
         buf[0] = "hoge";
-        if (myWrite(1, buf, buf[0].length()) != 4){
+        if (myWrite(i, buf, buf[0].length()) != 4){
             System.err.println("write err");
         }
     }
@@ -141,7 +141,7 @@ public class Main {
         String[] info = fd_dict.get(fd).info.split(":");
         String name = info[0];
         System.out.println("file_name = " + name);
-        String[] flags = new String[info.length-2];
+        String[] flags = new String[info.length-1];
         for (int i=1; i<info.length; i++) {
             flags[i-1] = info[i];
         }
@@ -182,7 +182,7 @@ public class Main {
         String[] info = fd_dict.get(fd).info.split(":");
         String name = info[0];
         System.out.println("file_name = " + name);
-        String[] flags = new String[info.length-2];
+        String[] flags = new String[info.length-1];
         for (int i=1; i<info.length; i++) {
             flags[i-1] = info[i];
         }
