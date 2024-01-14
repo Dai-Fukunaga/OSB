@@ -1,12 +1,18 @@
 import java.util.*;
 import java.io.*;
+import java.net.InetAddress;
+import java.net.Socket;
 
-public class Main {
-    public static Map<Integer, MyFile> fd_dict = new HashMap<>();
+public class ClientFunc {
+    private static Map<Integer, MyFile> fd_dict = new HashMap<>();
     /* <fd, "name:flag:"> */
     /* <fd, "name:flag:flag:"> */
 
-    public static void main(String[] args) {
+    private final int PORT = 8080;
+    private InetAddress addr;
+    private Socket socket = null;
+
+    public ClientFunc() {
         /*stdin,stdout,stderr */
         MyFile file1 = new MyFile("stdin:O_RDONLY:", null); /*stdinからのreadは未実装 */
         fd_dict.put(0, file1);
@@ -17,36 +23,23 @@ public class Main {
         MyFile file3 = new MyFile("stderr:O_WRONLY:", f3); /*stderrへのwriteはできる */
         fd_dict.put(2, file3);
 
-        int i = 0;
-        //if (myClose(2) == -1){
-        //    System.err.println("close err");
-        //}
-        //i = myOpen("abc.txt",MyFlags.O_RDONLY);
-        //System.out.println("fd = " + i);
-        //i = myOpen("abc.txt",MyFlags.O_RDONLY);
-        //System.out.println("fd = " + i);
-
-        //if (myClose(i) == -1){
-        //    System.err.println("close err");
-        //}
-        i = myOpen("abc.txt",MyFlags.O_RDWR | MyFlags.O_APPEND);
-        System.out.println("fd = " + i);
-        String[] buf = new String[] {""}; /*参照渡しのためlistに */
-        if (myRead(i, buf,3) != 3){
-            System.err.println("read err");
+        try {
+            this.addr = InetAddress.getByName("localhost"); // IP アドレスへの変換
+            this.socket = new Socket(addr, PORT); // ソケットの生成
+        } catch (IOException e) {
+            System.out.println(e);
         }
-        System.out.println("buf = " + buf[0]);
-
-        buf[0] = "hoge";
-        if (myWrite(i, buf,buf[0].length()) != buf[0].length()){
-            System.err.println("write err");
-        }
-        if (myClose(i) == -1){
-            System.err.println("close err");
+        // socketがnullなら待つ
+        while ( this.socket == null ) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                //System.out.println(e);
+            }
         }
     }
 
-    public static int myOpen(String name,int flags) {
+    public int myOpen(String name,int flags) {
         /* String name is const */
 
         /* flagsを2進数6桁埋めで */
@@ -126,7 +119,7 @@ public class Main {
         return j;
     }
 
-    public static int myClose(int fd){
+    public int myClose(int fd){
         /* fd_dict */
         if (fd_dict.get(fd) == null) {
             System.err.println("not found fd = " + fd);
@@ -146,13 +139,41 @@ public class Main {
             return 0;
         } else {
             /*ローカルキャッシュの内容をサーバーに書き込む */
+            File f = fd_dict.get(fd).file;
+            if (!f.exists()) {
+                System.err.println("file not found");
+                return -1;
+            }
+
+            try{
+                FileInputStream fileInputStream = new FileInputStream(f);
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                    byteArrayOutputStream.write(buffer, 0, bytesRead);
+                }
+                fileInputStream.close();
+                byteArrayOutputStream.close();
+                byte[] fileContent = byteArrayOutputStream.toByteArray();
+
+                // ファイルの内容をサーバーに送信
+                OutputStream outputStream = socket.getOutputStream();
+                outputStream.write(fileContent);
+                outputStream.flush();
+                outputStream.close();
+            } catch (IOException e) {
+                System.err.println(e);
+                return -1;
+            }
+
             System.out.println("close \""+fd_dict.get(fd)+"\"");
             fd_dict.put(fd, null);
             return 0;
         }
     }
 
-    public static int myRead (int fd , String[] buf, int nbytes) {
+    public int myRead (int fd , String[] buf, int nbytes) {
         if (fd_dict.get(fd) == null) {
             System.err.println("not found fd = " + fd);
             return -1;
@@ -192,7 +213,7 @@ public class Main {
         return nbytes;
     }
 
-    public static int myWrite (int fd , String[] buf, int nbytes) {
+    public int myWrite (int fd , String[] buf, int nbytes) {
         /* String buf is const */
         String tmp_buf = buf[0];
         if (fd_dict.get(fd) == null) {
