@@ -128,12 +128,28 @@ public class Main {
 
     public static int myClose(int fd){
         /* fd_dict */
-        if (fd_dict.get(fd) != null) {
+        if (fd_dict.get(fd) == null) {
+            System.err.println("not found fd = " + fd);
+            return -1;
+        }
+        /* <fd, "name:mode:flag:"> */
+        String[] info = fd_dict.get(fd).info.split(":");
+        String name = info[0];
+        System.out.println("file_name = " + name);
+        String[] flags = new String[info.length-1];
+        for (int i=1; i<info.length; i++) {
+            flags[i-1] = info[i];
+        }
+        if (flags[0].equals("O_RDONLY") == true) {
+            System.out.println("close \""+fd_dict.get(fd)+"\"");
+            fd_dict.put(fd, null);
+            return 0;
+        } else {
+            /*ローカルキャッシュの内容をサーバーに書き込む */
             System.out.println("close \""+fd_dict.get(fd)+"\"");
             fd_dict.put(fd, null);
             return 0;
         }
-        return -1;
     }
 
     public static int myRead (int fd , String[] buf, int nbytes) {
