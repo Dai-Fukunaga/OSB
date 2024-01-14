@@ -26,12 +26,6 @@ public class Client {
         if (cf.myWrite(i, buf,buf[0].length()) != buf[0].length()){
             System.err.println("write err");
         }
-        /*wait for 3 sec due to debug*/
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         if (cf.myClose(i) == -1){
             System.err.println("close err");
         }

@@ -25,6 +25,7 @@ public class ClientFunc {
 
         try {
             this.addr = InetAddress.getByName("localhost"); // IP アドレスへの変換
+            System.out.println("IP address: " + this.addr);
             this.socket = new Socket(addr, PORT); // ソケットの生成
         } catch (IOException e) {
             System.out.println(e);
@@ -146,6 +147,12 @@ public class ClientFunc {
             }
 
             try{
+                String msg = "save:" + name.split("/")[name.split("/").length-1];
+                PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
+                        true);
+                writer.println(msg);
+                writer.flush();
+
                 FileInputStream fileInputStream = new FileInputStream(f);
                 byte[] buffer = new byte[1024];
                 int bytesRead;
@@ -156,12 +163,12 @@ public class ClientFunc {
                 fileInputStream.close();
                 byteArrayOutputStream.close();
                 byte[] fileContent = byteArrayOutputStream.toByteArray();
-
                 // ファイルの内容をサーバーに送信
                 OutputStream outputStream = socket.getOutputStream();
                 outputStream.write(fileContent);
                 outputStream.flush();
                 outputStream.close();
+                writer.close();
             } catch (IOException e) {
                 System.err.println(e);
                 return -1;
