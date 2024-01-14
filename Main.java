@@ -3,30 +3,31 @@ import java.io.*;
 
 public class Main {
     public static Map<Integer, MyFile> fd_dict = new HashMap<>();
-    /* <fd, "name:mode:flag:"> */
-    /* <fd, "name:mode:flag:flag:"> */
+    /* <fd, "name:flag:"> */
+    /* <fd, "name:flag:flag:"> */
 
     public static void main(String[] args) {
-        MyFile file1 = new MyFile("stdin:a:O_RDONLY:", null); /*stdinからのreadは未実装 */
+        MyFile file1 = new MyFile("stdin:O_RDONLY:", null); /*stdinからのreadは未実装 */
         fd_dict.put(0, file1);
         File f2 = new File("/dev/pts/0");
-        MyFile file2 = new MyFile("stdout:a:O_WRONLY:", f2); /*stdoutへのwriteはできる */
+        MyFile file2 = new MyFile("stdout:O_WRONLY:", f2); /*stdoutへのwriteはできる */
         fd_dict.put(1, file2);
-        MyFile file3 = new MyFile("stderr:a:O_WRONLY:", f2); /*stderrへのwriteはできる */
+        File f3 = new File("/dev/pts/0");
+        MyFile file3 = new MyFile("stderr:O_WRONLY:", f3); /*stderrへのwriteはできる */
         fd_dict.put(2, file3);
         int i = 0;
         if (myClose(2) == -1){
             System.err.println("close err");
         }
-        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_CREAT,"a");
+        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_CREAT);
         System.out.println("fd = " + i);
-        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_CREAT,"a");
+        i = myOpen("abc.txt",MyFlags.O_RDONLY | MyFlags.O_CREAT);
         System.out.println("fd = " + i);
 
         if (myClose(i) == -1){
             System.err.println("close err");
         }
-        i = myOpen("abc.txt",MyFlags.O_RDWR | MyFlags.O_CREAT,"a");
+        i = myOpen("abc.txt",MyFlags.O_RDWR | MyFlags.O_CREAT);
         System.out.println("fd = " + i);
         String[] buf = new String[] {""}; /*参照渡しのためlistに */
         if (myRead(i, buf,3) != 3){
@@ -40,7 +41,7 @@ public class Main {
         }
     }
 
-    public static int myOpen(String name,int flags,String mode) {
+    public static int myOpen(String name,int flags) {
         /* String name is const */
         /* mode is 8進数 3桁 */
 
@@ -69,8 +70,6 @@ public class Main {
         String info = "";
         System.out.print("file_name = " + name + "\t\t");
         info = name + ":";
-        System.out.println("mode = " + mode);
-        info += mode + ":";
         System.out.print("flags_bin = " + flags_bin + "\t");
         for (int i=flags_bin_len-1; i>=0; i--) {
             if (flags_bin.charAt(i) == '1') {
@@ -141,11 +140,10 @@ public class Main {
         /* <fd, "name:mode:flag:"> */
         String[] info = fd_dict.get(fd).info.split(":");
         String name = info[0];
-        String mode = info[1];
         System.out.println("file_name = " + name);
         String[] flags = new String[info.length-2];
-        for (int i=2; i<info.length; i++) {
-            flags[i-2] = info[i];
+        for (int i=1; i<info.length; i++) {
+            flags[i-1] = info[i];
         }
         if (flags[0].equals("O_WRONLY") == true) {
             System.err.println("this file is not readable");
@@ -183,11 +181,10 @@ public class Main {
         /* <fd, "name:mode:flag:"> */
         String[] info = fd_dict.get(fd).info.split(":");
         String name = info[0];
-        String mode = info[1];
         System.out.println("file_name = " + name);
         String[] flags = new String[info.length-2];
-        for (int i=2; i<info.length; i++) {
-            flags[i-2] = info[i];
+        for (int i=1; i<info.length; i++) {
+            flags[i-1] = info[i];
         }
         if (flags[0].equals("O_RDONLY") == true) {
             System.err.println("this file is not writable");
