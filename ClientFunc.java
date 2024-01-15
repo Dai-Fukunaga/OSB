@@ -102,6 +102,12 @@ public class ClientFunc {
 
         try {
             String msg = "fetch:" + name.split("/")[name.split("/").length-1];
+            if (F_create){
+                msg += ":O_CREAT";
+            }
+            if (F_trunc){
+                msg += ":O_TRUNC";
+            }
             PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket2.getOutputStream())),
                     true);
             writer.println(msg);
@@ -116,24 +122,9 @@ public class ClientFunc {
 
         /*実際にファイルを開ける（作る） */
         File f = null;
-        try {
-            f = new File(name);
-            if (!f.exists() && F_create) {
-                if (!f.createNewFile()) {
-                    System.err.println("failed to create file");
-                    return -1;
-                }
-            } else if (!f.exists()) {
-                System.err.println("file not found");
-                return -1;
-            } else if (F_trunc) {
-                f.delete();
-                if (!f.createNewFile()) {
-                    return -1;
-                }
-            }
-        } catch (IOException e) {
-            System.err.println(e);
+        f = new File(name);
+        if (!f.exists()) {
+            System.err.println("file not found");
             return -1;
         }
 

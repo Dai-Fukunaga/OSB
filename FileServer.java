@@ -46,6 +46,40 @@ class ServerThread extends Thread {
                 int result = receive(msg[1], socket);
                 System.out.println("result = " + result);
             } else if(msg[0].equals("fetch")) {
+                boolean F_create = false;
+                boolean F_trunc = false;
+                if (msg.length >= 3) {
+                    for (int i = 2; i < msg.length; i++) {
+                        if (msg[i].equals("O_CREAT")) {
+                            F_create = true;
+                        }
+                        if (msg[i].equals("O_TRUNC")) {
+                            F_trunc = true;
+                        }
+                    }
+                }
+                /*実際にファイルを開ける（作る） */
+                File f = null;
+                try {
+                    f = new File(msg[1]);
+                    if (!f.exists() && F_create) {
+                        if (!f.createNewFile()) {
+                            System.err.println("failed to create file");
+                            return;
+                        }
+                    } else if (!f.exists()) {
+                        System.err.println("file not found");
+                        return;
+                    } else if (F_trunc) {
+                        f.delete();
+                        if (!f.createNewFile()) {
+                            return;
+                        }
+                    }
+                } catch (IOException e) {
+                    System.err.println(e);
+                    return;
+                }
                 try {
                     FileInputStream fileInputStream = new FileInputStream(msg[1]);
                     byte[] buffer = new byte[1024];
