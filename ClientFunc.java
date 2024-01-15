@@ -61,20 +61,20 @@ public class ClientFunc {
             System.err.println("flags_sum = " + sum);
             return -1;
         }
-        Boolean F_create = false;
-        Boolean F_trunc = false;
 
         /*info */
-        String info = "";
         System.out.print("file_name = " + name + "\t\t");
-        info = name + ":";
+        String info = name + ":";
         System.out.print("flags_bin = " + flags_bin + "\t");
+
+        Boolean F_create = false;
+        Boolean F_trunc = false;
         for (int i=flags_bin_len-1; i>=0; i--) {
             if (flags_bin.charAt(i) == '1') {
                 System.out.print( MyFlags.flags[flags_bin_len-i-1]+"\t");
-                if (MyFlags.flags[flags_bin_len-i-1].equals("O_CREAT") == true) {
+                if (MyFlags.flags[flags_bin_len-i-1].equals("O_CREAT")) {
                     F_create = true;
-                } else if (MyFlags.flags[flags_bin_len-i-1].equals("O_TRUNC") == true) {
+                } else if (MyFlags.flags[flags_bin_len-i-1].equals("O_TRUNC")) {
                     F_trunc = true;
                 } else {
                     info += MyFlags.flags[flags_bin_len-i-1] + ":";
@@ -84,12 +84,12 @@ public class ClientFunc {
         System.out.println();
 
         /*実際にファイルを開ける（作る） */
-        File f;
+        File f = null;
         try{
             f = new File(name);
             if (!f.exists() && F_create) {
-                boolean result = f.createNewFile();
-                if (!result) {
+                if (!f.createNewFile()) {
+                    System.err.println("failed to create file");
                     return -1;
                 }
             } else if (!f.exists()) {
@@ -97,8 +97,7 @@ public class ClientFunc {
                 return -1;
             } else if (F_trunc) {
                 f.delete();
-                boolean result = f.createNewFile();
-                if (!result) {
+                if (!f.createNewFile()) {
                     return -1;
                 }
             }
@@ -109,15 +108,15 @@ public class ClientFunc {
         MyFile info_file = new MyFile(info, f);
 
         /* fd_dict */
-        int j=0;
-        for (j=0; j<fd_dict.size(); j++) {
-            if (fd_dict.get(j) == null) {
-                fd_dict.put(j, info_file);
-                return j;
+        int fd=0;
+        for (fd=0; fd<fd_dict.size(); fd++) {
+            if (fd_dict.get(fd) == null) {
+                fd_dict.put(fd, info_file);
+                return fd;
             }
         }
-        fd_dict.put(j, info_file);
-        return j;
+        fd_dict.put(fd, info_file);
+        return fd;
     }
 
     public int myClose(int fd){
