@@ -171,6 +171,7 @@ public class ClientFunc {
 
             try {
                 String msg = "save:" + name.split("/")[name.split("/").length-1];
+                msg += ":" + info[1];
                 PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket1.getOutputStream())),
                         true);
                 writer.println(msg);
