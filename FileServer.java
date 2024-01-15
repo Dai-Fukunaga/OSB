@@ -42,6 +42,8 @@ class ServerThread extends Thread {
             System.out.println(line);
             String[] msg = line.split(":");
             if (msg[0].equals("save")) {
+                String rw = msg[2];
+                System.out.println(rw);
                 /* クライアントからfileを受け取る */
                 int result = receive(msg[1], socket);
                 System.out.println("result = " + result);
