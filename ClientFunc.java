@@ -84,6 +84,7 @@ public class ClientFunc {
 
         System.out.println();
 
+        /*実際にファイルを開ける（作る） */
         File f = null;
         try {
             f = new File(name);
