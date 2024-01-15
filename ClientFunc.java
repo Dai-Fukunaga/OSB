@@ -10,7 +10,8 @@ public class ClientFunc {
 
     private final int PORT = 8080;
     private InetAddress addr;
-    private Socket socket = null;
+    private Socket socket1 = null;
+    private Socket socket2 = null;
 
     public ClientFunc() {
         /* stdin,stdout,stderr */
@@ -26,12 +27,27 @@ public class ClientFunc {
         try {
             this.addr = InetAddress.getByName("localhost"); // IP アドレスへの変換
             System.out.println("IP address: " + this.addr);
-            this.socket = new Socket(addr, PORT); // ソケットの生成
+            this.socket1 = new Socket(addr, PORT); // ソケットの生成
         } catch (IOException e) {
             System.out.println(e);
         }
         // socketがnullなら待つ
-        while (this.socket == null) {
+        while (this.socket1 == null) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                // System.out.println(e);
+            }
+        }
+        try {
+            this.addr = InetAddress.getByName("localhost"); // IP アドレスへの変換
+            System.out.println("IP address: " + this.addr);
+            this.socket2 = new Socket(addr, PORT); // ソケットの生成
+        } catch (IOException e) {
+            System.out.println(e);
+        }
+        // socketがnullなら待つ
+        while (this.socket2 == null) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -86,11 +102,11 @@ public class ClientFunc {
 
         try {
             String msg = "fetch:" + name.split("/")[name.split("/").length-1];
-            PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket2.getOutputStream())),
                     true);
             writer.println(msg);
             writer.flush();
-            int result = receive(name, socket);
+            int result = receive(name, socket2);
             writer.close();
             System.out.println("result = " + result);
         } catch (IOException e) {
@@ -163,7 +179,7 @@ public class ClientFunc {
 
             try {
                 String msg = "save:" + name.split("/")[name.split("/").length-1];
-                PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
+                PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket1.getOutputStream())),
                         true);
                 writer.println(msg);
                 writer.flush();
@@ -179,7 +195,7 @@ public class ClientFunc {
                 byteArrayOutputStream.close();
                 byte[] fileContent = byteArrayOutputStream.toByteArray();
                 // ファイルの内容をサーバーに送信
-                OutputStream outputStream = socket.getOutputStream();
+                OutputStream outputStream = socket1.getOutputStream();
                 outputStream.write(fileContent);
                 outputStream.flush();
                 outputStream.close();
