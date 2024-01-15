@@ -5,11 +5,12 @@ import java.util.Set;
 
 public class FileServer {
     static int PORT = 8080;
-    private Set<String> used = new HashSet<>();
+
+    private static Set<String> used = new HashSet<>();
 
     public static void main(String[] args) throws IOException {
         ServerSocket s = new ServerSocket(PORT);
-        try{
+        try {
             System.out.println("Wait for the connection...");
             while (true) {
                 Socket socket = s.accept();
@@ -20,13 +21,25 @@ public class FileServer {
             System.err.println(e);
         } finally {
             try {
-                if(s != null) {
+                if (s != null) {
                     s.close();
                 }
             } catch (IOException e) {
                 System.err.println(e);
             }
         }
+    }
+
+    public static void addUsed(String file_name) {
+        used.add(file_name);
+    }
+
+    public static void removeUsed(String file_name) {
+        used.remove(file_name);
+    }
+
+    public static boolean containsUsed(String file_name) {
+        return used.contains(file_name);
     }
 }
 
@@ -44,15 +57,29 @@ class ServerThread extends Thread {
             line = reader.readLine();
             System.out.println(line);
             String[] msg = line.split(":");
+            String file_name = msg[1];
+            String rw = msg[2];
             if (msg[0].equals("save")) {
                 /* クライアントからfileを受け取る */
                 int result = receive(msg[1], socket);
                 System.out.println("result = " + result);
-            } else if(msg[0].equals("fetch")) {
+                if (!rw.equals("O_RDONLY")) {
+                    FileServer.removeUsed(file_name);
+                }
+            } else if (msg[0].equals("fetch")) {
                 boolean F_create = false;
                 boolean F_trunc = false;
-                String rw = msg[2];
+                if (!rw.equals("O_RDONLY")) {
+                    if (FileServer.containsUsed(file_name)) {
+                        System.err.println("permission denied");
+                        return;
+                    }
+                }
+
+                FileServer.addUsed(file_name);
+
                 System.out.println(rw);
+
                 if (msg.length >= 4) {
                     for (int i = 3; i < msg.length; i++) {
                         if (msg[i].equals("O_CREAT")) {
@@ -63,10 +90,10 @@ class ServerThread extends Thread {
                         }
                     }
                 }
-                /*実際にファイルを開ける（作る） */
+                /* 実際にファイルを開ける（作る） */
                 File f = null;
                 try {
-                    f = new File(msg[1]);
+                    f = new File(file_name);
                     if (!f.exists() && F_create) {
                         if (!f.createNewFile()) {
                             System.err.println("failed to create file");
