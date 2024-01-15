@@ -10,7 +10,8 @@ public class ClientFunc {
 
     private final int PORT = 8080;
     private InetAddress addr;
-    private Socket socket = null;
+    private Socket socket1 = null;
+    private Socket socket2 = null;
 
     public ClientFunc() {
         /* stdin,stdout,stderr */
@@ -26,12 +27,27 @@ public class ClientFunc {
         try {
             this.addr = InetAddress.getByName("localhost"); // IP アドレスへの変換
             System.out.println("IP address: " + this.addr);
-            this.socket = new Socket(addr, PORT); // ソケットの生成
+            this.socket1 = new Socket(addr, PORT); // ソケットの生成
         } catch (IOException e) {
             System.out.println(e);
         }
         // socketがnullなら待つ
-        while (this.socket == null) {
+        while (this.socket1 == null) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                // System.out.println(e);
+            }
+        }
+        try {
+            this.addr = InetAddress.getByName("localhost"); // IP アドレスへの変換
+            System.out.println("IP address: " + this.addr);
+            this.socket2 = new Socket(addr, PORT); // ソケットの生成
+        } catch (IOException e) {
+            System.out.println(e);
+        }
+        // socketがnullなら待つ
+        while (this.socket2 == null) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -84,26 +100,32 @@ public class ClientFunc {
 
         System.out.println();
 
-        /*実際にファイルを開ける（作る） */
-        File f = null;
         try {
-            f = new File(name);
-            if (!f.exists() && F_create) {
-                if (!f.createNewFile()) {
-                    System.err.println("failed to create file");
-                    return -1;
-                }
-            } else if (!f.exists()) {
-                System.err.println("file not found");
-                return -1;
-            } else if (F_trunc) {
-                f.delete();
-                if (!f.createNewFile()) {
-                    return -1;
-                }
+            String msg = "fetch:" + name.split("/")[name.split("/").length-1];
+            msg += ":" + info.split(":")[1];
+            if (F_create){
+                msg += ":O_CREAT";
             }
+            if (F_trunc){
+                msg += ":O_TRUNC";
+            }
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket2.getOutputStream())),
+                    true);
+            writer.println(msg);
+            writer.flush();
+            int result = receive(name, socket2);
+            writer.close();
+            System.out.println("result = " + result);
         } catch (IOException e) {
             System.err.println(e);
+            return -1;
+        }
+
+        /*実際にファイルを開ける（作る） */
+        File f = null;
+        f = new File(name);
+        if (!f.exists()) {
+            System.err.println("file not found");
             return -1;
         }
 
@@ -149,7 +171,8 @@ public class ClientFunc {
 
             try {
                 String msg = "save:" + name.split("/")[name.split("/").length-1];
-                PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
+                msg += ":" + info[1];
+                PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket1.getOutputStream())),
                         true);
                 writer.println(msg);
                 writer.flush();
@@ -165,7 +188,7 @@ public class ClientFunc {
                 byteArrayOutputStream.close();
                 byte[] fileContent = byteArrayOutputStream.toByteArray();
                 // ファイルの内容をサーバーに送信
-                OutputStream outputStream = socket.getOutputStream();
+                OutputStream outputStream = socket1.getOutputStream();
                 outputStream.write(fileContent);
                 outputStream.flush();
                 outputStream.close();
@@ -311,5 +334,29 @@ public class ClientFunc {
             return -1;
         }
         return nbytes;
+    }
+
+    public static int receive(String fileName, Socket socket) throws IOException {
+        if (socket.isClosed()) {
+            System.out.println("Socket is closed!!");
+            return -1;
+        }
+        DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int bytesRead;
+
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+            byteArrayOutputStream.write(buffer, 0, bytesRead);
+        }
+        inputStream.close();
+        byte[] fileContent = byteArrayOutputStream.toByteArray();
+
+        // 受信したファイルの内容をファイルに保存
+        // file_nameに保存
+        FileOutputStream fileOutputStream = new FileOutputStream(fileName);
+        fileOutputStream.write(fileContent);
+        fileOutputStream.close();
+        return 0;
     }
 }
