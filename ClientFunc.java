@@ -102,6 +102,7 @@ public class ClientFunc {
 
         try {
             String msg = "fetch:" + name.split("/")[name.split("/").length-1];
+            msg += ":" + info.split(":")[1];
             if (F_create){
                 msg += ":O_CREAT";
             }
