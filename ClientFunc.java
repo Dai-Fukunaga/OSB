@@ -84,6 +84,20 @@ public class ClientFunc {
 
         System.out.println();
 
+        try {
+            String msg = "fetch:" + name.split("/")[name.split("/").length-1];
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
+                    true);
+            writer.println(msg);
+            writer.flush();
+            int result = receive(name, socket);
+            writer.close();
+            System.out.println("result = " + result);
+        } catch (IOException e) {
+            System.err.println(e);
+            return -1;
+        }
+
         /*実際にファイルを開ける（作る） */
         File f = null;
         try {
@@ -311,5 +325,29 @@ public class ClientFunc {
             return -1;
         }
         return nbytes;
+    }
+
+    public static int receive(String fileName, Socket socket) throws IOException {
+        if (socket.isClosed()) {
+            System.out.println("Socket is closed!!");
+            return -1;
+        }
+        DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int bytesRead;
+
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+            byteArrayOutputStream.write(buffer, 0, bytesRead);
+        }
+        inputStream.close();
+        byte[] fileContent = byteArrayOutputStream.toByteArray();
+
+        // 受信したファイルの内容をファイルに保存
+        // file_nameに保存
+        FileOutputStream fileOutputStream = new FileOutputStream(fileName);
+        fileOutputStream.write(fileContent);
+        fileOutputStream.close();
+        return 0;
     }
 }

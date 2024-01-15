@@ -1,14 +1,5 @@
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
+import java.net.*;
 
 public class FileServer {
     static int PORT = 8080;
@@ -54,6 +45,26 @@ class ServerThread extends Thread {
                 /* クライアントからfileを受け取る */
                 int result = receive(msg[1], socket);
                 System.out.println("result = " + result);
+            } else if(msg[0].equals("fetch")) {
+                try {
+                    FileInputStream fileInputStream = new FileInputStream(msg[1]);
+                    byte[] buffer = new byte[1024];
+                    int bytesRead;
+                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                    while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                        byteArrayOutputStream.write(buffer, 0, bytesRead);
+                    }
+                    fileInputStream.close();
+                    byteArrayOutputStream.close();
+                    byte[] fileContent = byteArrayOutputStream.toByteArray();
+                    // ファイルの内容をサーバーに送信
+                    OutputStream outputStream = socket.getOutputStream();
+                    outputStream.write(fileContent);
+                    outputStream.flush();
+                    outputStream.close();
+                } catch (IOException e) {
+                    System.err.println(e);
+                }
             }
             reader.close();
         } catch (IOException error) {
