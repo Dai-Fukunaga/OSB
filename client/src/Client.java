@@ -1,33 +1,68 @@
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Client {
-    public static void main(String[] args) {
-        ClientFunc cf = new ClientFunc();
-        int i = 0;
-        //if (myClose(2) == -1){
-        //    System.err.println("close err");
-        //}
-        //i = myOpen("abc.txt",MyFlags.O_RDONLY);
-        //System.out.println("fd = " + i);
-        //i = myOpen("abc.txt",MyFlags.O_RDONLY);
-        //System.out.println("fd = " + i);
+    private Socket socket;
+    private ObjectOutputStream out;
+    private ObjectInputStream in;
+    private Set<String> files;
 
-        //if (myClose(i) == -1){
-        //    System.err.println("close err");
-        //}
-        i = cf.myOpen("./client/abc.txt",MyFlags.O_RDWR | MyFlags.O_APPEND);
-        System.out.println("fd = " + i);
-        String[] buf = new String[] {""}; /*参照渡しのためlistに */
-        if (cf.myRead(i, buf,3) != 3){
-            System.err.println("read err");
-        }
-        System.out.println("buf = " + buf[0]);
+    public Client(Socket sock) {
+        this.socket = sock;
+        this.files = new HashSet<>();
+    }
 
-        buf[0] = "hoge";
-        if (cf.myWrite(i, buf,buf[0].length()) != buf[0].length()){
-            System.err.println("write err");
+    /**
+     * this is a function for opening a file
+     * @param name file name
+     * @param path file path
+     * @param mode open option
+     */
+    public void open(String name, String path, String mode) {
+        if (files.contains(path)) {
+            try {
+                File f = new File("./" + path);
+                FileReader fr = new FileReader(f);
+                BufferedReader br = new BufferedReader(fr);
+                String str;
+                while ((str = br.readLine()) != null) {
+                    System.out.println(str);
+                }
+                br.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
         }
-        if (cf.myClose(i) == -1){
-            System.err.println("close err");
+        String[] file = new String[4];
+        try {
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
+            String[] msg = {"open", name, path, mode};
+            out.writeObject(msg);
+            out.flush();
+            file = (String[])in.readObject();
+            System.out.println(file[0]);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (mode == "r") {
+            try {
+                File f = new File("./" + path);
+                FileWriter fw = new FileWriter(f);
+                fw.write(file[0]);
+                fw.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
