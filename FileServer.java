@@ -48,8 +48,10 @@ class ServerThread extends Thread {
             } else if(msg[0].equals("fetch")) {
                 boolean F_create = false;
                 boolean F_trunc = false;
-                if (msg.length >= 3) {
-                    for (int i = 2; i < msg.length; i++) {
+                String rw = msg[2];
+                System.out.println(rw);
+                if (msg.length >= 4) {
+                    for (int i = 3; i < msg.length; i++) {
                         if (msg[i].equals("O_CREAT")) {
                             F_create = true;
                         }
