@@ -1,8 +1,11 @@
 import java.io.*;
 import java.net.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class FileServer {
     static int PORT = 8080;
+    private Set<String> used = new HashSet<>();
 
     public static void main(String[] args) throws IOException {
         ServerSocket s = new ServerSocket(PORT);
