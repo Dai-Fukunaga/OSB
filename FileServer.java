@@ -60,7 +60,6 @@ class ServerThread extends Thread {
             String file_name = msg[1];
             String rw = msg[2];
             if (msg[0].equals("save")) {
-                String rw = msg[2];
                 System.out.println(rw);
                 /* クライアントからfileを受け取る */
                 int result = receive(msg[1], socket);
@@ -72,6 +71,7 @@ class ServerThread extends Thread {
                 boolean F_create = false;
                 boolean F_trunc = false;
                 if (!rw.equals("O_RDONLY")) {
+                    System.err.println("not readonly");
                     if (FileServer.containsUsed(file_name)) {
                         System.err.println("permission denied");
                         return;
