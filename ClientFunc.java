@@ -2,8 +2,10 @@ import java.util.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 public class ClientFunc {
+    private String username = "";
     private static Map<Integer, MyFile> fd_dict = new HashMap<>();
     /* <fd, "name:flag:"> */
     /* <fd, "name:flag:flag:"> */
@@ -13,7 +15,8 @@ public class ClientFunc {
     private Socket socket1 = null;
     private Socket socket2 = null;
 
-    public ClientFunc() {
+    public ClientFunc(String username) {
+        this.username = username;
         /* stdin,stdout,stderr */
         MyFile file1 = new MyFile("stdin:O_RDONLY:", null); /* stdinからのreadは未実装 */
         fd_dict.put(0, file1);
@@ -116,6 +119,9 @@ public class ClientFunc {
             int result = receive(name, socket2);
             writer.close();
             System.out.println("result = " + result);
+            if (result == -1) {
+                return -1;
+            }
         } catch (IOException e) {
             System.err.println(e);
             return -1;
@@ -351,6 +357,12 @@ public class ClientFunc {
         }
         inputStream.close();
         byte[] fileContent = byteArrayOutputStream.toByteArray();
+        String error_message = "permission denied";
+        byte[] error_message_bytes = error_message.getBytes();
+        if (Arrays.equals(fileContent, error_message_bytes) == true) {
+            System.err.println("permission denied | fileContent is \"permission denied\"");
+            return -1;
+        }
 
         // 受信したファイルの内容をファイルに保存
         // file_nameに保存

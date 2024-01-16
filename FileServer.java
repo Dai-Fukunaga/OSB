@@ -74,6 +74,13 @@ class ServerThread extends Thread {
                     System.err.println("not readonly");
                     if (FileServer.containsUsed(file_name)) {
                         System.err.println("permission denied");
+                        String error_message = "permission denied";
+                        byte[] fileContent = error_message.getBytes();
+                        // ファイルの内容をサーバーに送信
+                        OutputStream outputStream = socket.getOutputStream();
+                        outputStream.write(fileContent);
+                        outputStream.flush();
+                        outputStream.close();
                         return;
                     }
                 }
