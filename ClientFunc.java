@@ -9,7 +9,6 @@ public class ClientFunc {
     /* <fd, "name:flag:"> */
     /* <fd, "name:flag:flag:"> */
 
-    private static final int PORT = 8080;
     private static Socket socket = null;
 
     public ClientFunc(String username) {
@@ -22,6 +21,14 @@ public class ClientFunc {
         File dir = new File("client/" + this.username);
         if (!dir.exists()) {
             dir.mkdirs();
+        }
+        File A = new File("client/" + this.username + "/A");
+        if (!A.exists()) {
+            A.mkdirs();
+        }
+        File B = new File("client/" + this.username + "/B");
+        if (!B.exists()) {
+            B.mkdirs();
         }
         /* stdin,stdout,stderr */
         MyFile file1 = new MyFile("stdin:O_RDONLY:", null); /* stdinからのreadは未実装 */
@@ -37,8 +44,24 @@ public class ClientFunc {
     public int myOpen(String fileName, int flags) {
         /* String name is const */
 
-        connect();
+        /* 最初に./があるかも　→　削除 */
+        if (fileName.charAt(0) == '.') {
+            fileName = fileName.substring(1);
+        }
+        if (fileName.charAt(0) == '/') {
+            fileName = fileName.substring(1);
+        }
+        /* fileNameがsever名/ファイル名の形である */
+        if (fileName.split("/").length != 2) {
+            System.err.println("Bad file name");
+            return -1;
+        }
+        String selected_sever = fileName.split("/")[0];
+        if (connect(selected_sever) == -1) {
+            return -1;
+        }
         String path = "./client/" + username + "/" + fileName;
+        /*  ./client/taka/A/abc.txt  */
 
         /* flagsを2進数6桁埋めで */
         String flags_bin = Integer.toBinaryString(flags);
@@ -128,7 +151,6 @@ public class ClientFunc {
     }
 
     public int myClose(int fd) {
-        connect();
         /* fd_dict */
         if (fd_dict.get(fd) == null) {
             System.err.println("not found fd = " + fd);
@@ -138,6 +160,11 @@ public class ClientFunc {
         String[] info = fd_dict.get(fd).info.split(":");
         String name = info[0];
         System.out.println("file_name = " + name);
+        /* name = ./client/taka/A/abc.txt */
+        String selected_sever = name.split("/")[3];
+        if (connect(selected_sever) == -1) {
+            return -1;
+        }
         String[] flags = new String[info.length - 1];
         for (int i = 1; i < info.length; i++) {
             flags[i - 1] = info[i];
@@ -353,24 +380,34 @@ public class ClientFunc {
         return 0;
     }
 
-    public static void connect(){
+    public static int connect(String serverName) {
+        int PORT;
+        if (serverName.equals("A")) {
+            PORT = 8080;
+        } else if (serverName.equals("B")) {
+            PORT = 8081;
+        } else {
+            System.err.println("Bad server name = " + serverName);
+            return -1;
+        }
         try {
             InetAddress addr = InetAddress.getByName("localhost"); // IP アドレスへの変換
             System.out.println("IP address: " + addr);
             socket = new Socket(addr, PORT); // ソケットの生成
         } catch (IOException e) {
             System.out.println(e);
-            return;
+            return -1;
         }
         // socketがnullなら待つ
         while (socket == null) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                return;
+                return -1;
                 // System.out.println(e);
             }
         }
+        return 0;
     }
 
 }

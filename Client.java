@@ -4,7 +4,7 @@ public class Client {
         String username = args[0];
         ClientFunc cf = new ClientFunc(username);
         int i = 0;
-        i = cf.myOpen("abc.txt", MyFlags.O_RDWR | MyFlags.O_APPEND);
+        i = cf.myOpen("A/abc.txt", MyFlags.O_RDWR | MyFlags.O_APPEND);
         if (i == -1) {
             System.err.println("open err");
             return;
@@ -32,7 +32,7 @@ public class Client {
             return;
         }
 
-        i = cf.myOpen("abc.txt", MyFlags.O_RDWR | MyFlags.O_APPEND);
+        i = cf.myOpen("./B/def.txt", MyFlags.O_RDWR | MyFlags.O_APPEND);
         if (i == -1) {
             System.err.println("open err");
             return;

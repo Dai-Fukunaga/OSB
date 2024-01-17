@@ -4,17 +4,25 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class FileServer {
-    static int PORT = 8080;
-
     private static Set<String> used = new HashSet<>();
 
     public static void main(String[] args) throws IOException {
+        int PORT = Integer.parseInt(args[0]);
+        String server_name = "";
+        if (PORT == 8080) {
+            server_name = "A";
+        } else if (PORT == 8081) {
+            server_name = "B";
+        } else {
+            System.err.println("Bad port number = " + PORT);
+            return;
+        }
         ServerSocket s = new ServerSocket(PORT);
         try {
             System.out.println("Wait for the connection...");
             while (true) {
                 Socket socket = s.accept();
-                new ServerThread(socket).start();
+                new ServerThread(socket, server_name).start();
                 System.out.println("Waiting for new connection");
             }
         } catch (Error e) {
@@ -45,9 +53,11 @@ public class FileServer {
 
 class ServerThread extends Thread {
     private Socket socket;
+    private String server_name;
 
-    public ServerThread(Socket socket) {
+    public ServerThread(Socket socket, String server_name) {
         this.socket = socket;
+        this.server_name = server_name;
     }
 
     public void run() {
@@ -62,7 +72,7 @@ class ServerThread extends Thread {
             if (msg[0].equals("save")) {
                 System.out.println(rw);
                 /* クライアントからfileを受け取る */
-                int result = receive(msg[1], socket);
+                int result = receive(file_name, socket, server_name);
                 System.out.println("result = " + result);
                 if (!rw.equals("O_RDONLY")) {
                     FileServer.removeUsed(file_name);
@@ -109,8 +119,9 @@ class ServerThread extends Thread {
                 }
                 /* 実際にファイルを開ける（作る） */
                 File f = null;
+                String file = server_name + "/" + file_name;
                 try {
-                    f = new File(file_name);
+                    f = new File(file);
                     if (!f.exists() && F_create) {
                         if (!f.createNewFile()) {
                             System.err.println("failed to create file");
@@ -130,7 +141,7 @@ class ServerThread extends Thread {
                     return;
                 }
                 try {
-                    FileInputStream fileInputStream = new FileInputStream(msg[1]);
+                    FileInputStream fileInputStream = new FileInputStream(file);
                     byte[] buffer = new byte[1024];
                     int bytesRead;
                     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -163,7 +174,7 @@ class ServerThread extends Thread {
         }
     }
 
-    public static int receive(String fileName, Socket socket) throws IOException {
+    public static int receive(String fileName, Socket socket, String server_name) throws IOException {
         if (socket.isClosed()) {
             System.out.println("Socket is closed!!");
             return -1;
@@ -181,6 +192,7 @@ class ServerThread extends Thread {
 
         // 受信したファイルの内容をファイルに保存
         // file_nameに保存
+        fileName = server_name + "/" + fileName;
         FileOutputStream fileOutputStream = new FileOutputStream(fileName);
         fileOutputStream.write(fileContent);
         fileOutputStream.close();
