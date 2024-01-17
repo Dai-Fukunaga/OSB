@@ -5,17 +5,7 @@ public class Client {
         String username = args[0];
         ClientFunc cf = new ClientFunc(username);
         int i = 0;
-        // if (myClose(2) == -1){
-        // System.err.println("close err");
-        // }
-        // i = myOpen("abc.txt",MyFlags.O_RDONLY);
-        // System.out.println("fd = " + i);
-        // i = myOpen("abc.txt",MyFlags.O_RDONLY);
-        // System.out.println("fd = " + i);
 
-        // if (myClose(i) == -1){
-        // System.err.println("close err");
-        // }
         File client = new File("client");
         if (!client.exists()) {
             client.mkdirs();

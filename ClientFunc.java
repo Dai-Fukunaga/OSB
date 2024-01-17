@@ -104,12 +104,12 @@ public class ClientFunc {
         System.out.println();
 
         try {
-            String msg = "fetch:" + name.split("/")[name.split("/").length-1];
+            String msg = "fetch:" + name.split("/")[name.split("/").length - 1];
             msg += ":" + info.split(":")[1];
-            if (F_create){
+            if (F_create) {
                 msg += ":O_CREAT";
             }
-            if (F_trunc){
+            if (F_trunc) {
                 msg += ":O_TRUNC";
             }
             PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket2.getOutputStream())),
@@ -127,7 +127,7 @@ public class ClientFunc {
             return -1;
         }
 
-        /*実際にファイルを開ける（作る） */
+        /* 実際にファイルを開ける（作る） */
         File f = null;
         f = new File(name);
         if (!f.exists()) {
@@ -163,11 +163,7 @@ public class ClientFunc {
         for (int i = 1; i < info.length; i++) {
             flags[i - 1] = info[i];
         }
-        if (flags[0].equals("O_RDONLY") == true) {
-            System.out.println("close \"" + fd_dict.get(fd) + "\"");
-            fd_dict.put(fd, null);
-            return 0;
-        } else {
+        if (!flags[0].equals("O_RDONLY")) {
             /* ローカルキャッシュの内容をサーバーに書き込む */
             File f = fd_dict.get(fd).file;
             if (!f.exists()) {
@@ -176,9 +172,10 @@ public class ClientFunc {
             }
 
             try {
-                String msg = "save:" + name.split("/")[name.split("/").length-1];
+                String msg = "save:" + name.split("/")[name.split("/").length - 1];
                 msg += ":" + info[1];
-                PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket1.getOutputStream())),
+                PrintWriter writer = new PrintWriter(
+                        new BufferedWriter(new OutputStreamWriter(socket1.getOutputStream())),
                         true);
                 writer.println(msg);
                 writer.flush();
@@ -203,11 +200,16 @@ public class ClientFunc {
                 System.err.println(e);
                 return -1;
             }
-
-            System.out.println("close \"" + fd_dict.get(fd) + "\"");
-            fd_dict.put(fd, null);
-            return 0;
         }
+
+        System.out.println("close \"" + fd_dict.get(fd) + "\"");
+
+        // delete file
+        fd_dict.get(fd).file.delete();
+
+        fd_dict.put(fd, null);
+
+        return 0;
     }
 
     public int myRead(int fd, String[] buf, int nbytes) {
