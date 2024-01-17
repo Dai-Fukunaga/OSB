@@ -2,8 +2,10 @@ import java.util.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 public class ClientFunc {
+    private String username = "";
     private static Map<Integer, MyFile> fd_dict = new HashMap<>();
     /* <fd, "name:flag:"> */
     /* <fd, "name:flag:flag:"> */
@@ -13,7 +15,8 @@ public class ClientFunc {
     private Socket socket1 = null;
     private Socket socket2 = null;
 
-    public ClientFunc() {
+    public ClientFunc(String username) {
+        this.username = username;
         /* stdin,stdout,stderr */
         MyFile file1 = new MyFile("stdin:O_RDONLY:", null); /* stdinからのreadは未実装 */
         fd_dict.put(0, file1);
@@ -101,12 +104,12 @@ public class ClientFunc {
         System.out.println();
 
         try {
-            String msg = "fetch:" + name.split("/")[name.split("/").length-1];
+            String msg = "fetch:" + name.split("/")[name.split("/").length - 1];
             msg += ":" + info.split(":")[1];
-            if (F_create){
+            if (F_create) {
                 msg += ":O_CREAT";
             }
-            if (F_trunc){
+            if (F_trunc) {
                 msg += ":O_TRUNC";
             }
             PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket2.getOutputStream())),
@@ -116,12 +119,15 @@ public class ClientFunc {
             int result = receive(name, socket2);
             writer.close();
             System.out.println("result = " + result);
+            if (result == -1) {
+                return -1;
+            }
         } catch (IOException e) {
             System.err.println(e);
             return -1;
         }
 
-        /*実際にファイルを開ける（作る） */
+        /* 実際にファイルを開ける（作る） */
         File f = null;
         f = new File(name);
         if (!f.exists()) {
@@ -157,11 +163,7 @@ public class ClientFunc {
         for (int i = 1; i < info.length; i++) {
             flags[i - 1] = info[i];
         }
-        if (flags[0].equals("O_RDONLY") == true) {
-            System.out.println("close \"" + fd_dict.get(fd) + "\"");
-            fd_dict.put(fd, null);
-            return 0;
-        } else {
+        if (!flags[0].equals("O_RDONLY")) {
             /* ローカルキャッシュの内容をサーバーに書き込む */
             File f = fd_dict.get(fd).file;
             if (!f.exists()) {
@@ -170,9 +172,10 @@ public class ClientFunc {
             }
 
             try {
-                String msg = "save:" + name.split("/")[name.split("/").length-1];
+                String msg = "save:" + name.split("/")[name.split("/").length - 1];
                 msg += ":" + info[1];
-                PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket1.getOutputStream())),
+                PrintWriter writer = new PrintWriter(
+                        new BufferedWriter(new OutputStreamWriter(socket1.getOutputStream())),
                         true);
                 writer.println(msg);
                 writer.flush();
@@ -197,11 +200,16 @@ public class ClientFunc {
                 System.err.println(e);
                 return -1;
             }
-
-            System.out.println("close \"" + fd_dict.get(fd) + "\"");
-            fd_dict.put(fd, null);
-            return 0;
         }
+
+        System.out.println("close \"" + fd_dict.get(fd) + "\"");
+
+        // delete file
+        fd_dict.get(fd).file.delete();
+
+        fd_dict.put(fd, null);
+
+        return 0;
     }
 
     public int myRead(int fd, String[] buf, int nbytes) {
@@ -351,6 +359,12 @@ public class ClientFunc {
         }
         inputStream.close();
         byte[] fileContent = byteArrayOutputStream.toByteArray();
+        String error_message = "permission denied";
+        byte[] error_message_bytes = error_message.getBytes();
+        if (Arrays.equals(fileContent, error_message_bytes) == true) {
+            System.err.println("permission denied | fileContent is \"permission denied\"");
+            return -1;
+        }
 
         // 受信したファイルの内容をファイルに保存
         // file_nameに保存
