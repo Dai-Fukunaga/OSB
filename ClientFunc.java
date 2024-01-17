@@ -2,7 +2,6 @@ import java.util.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 
 public class ClientFunc {
     private String username = "";
@@ -17,6 +16,15 @@ public class ClientFunc {
 
     public ClientFunc(String username) {
         this.username = username;
+        /* create folder */
+        File client = new File("client");
+        if (!client.exists()) {
+            client.mkdirs();
+        }
+        File dir = new File("client/" + this.username);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
         /* stdin,stdout,stderr */
         MyFile file1 = new MyFile("stdin:O_RDONLY:", null); /* stdinからのreadは未実装 */
         fd_dict.put(0, file1);
@@ -59,8 +67,10 @@ public class ClientFunc {
         }
     }
 
-    public int myOpen(String name, int flags) {
+    public int myOpen(String fileName, int flags) {
         /* String name is const */
+
+        String path = "./client/" + username + "/" + fileName;
 
         /* flagsを2進数6桁埋めで */
         String flags_bin = Integer.toBinaryString(flags);
@@ -82,8 +92,8 @@ public class ClientFunc {
         }
 
         /* info */
-        System.out.print("file_name = " + name + "\t\t");
-        String info = name + ":";
+        System.out.print("file_name = " + path + "\t\t");
+        String info = path + ":";
         System.out.print("flags_bin = " + flags_bin + "\t");
 
         Boolean F_create = false;
@@ -104,7 +114,7 @@ public class ClientFunc {
         System.out.println();
 
         try {
-            String msg = "fetch:" + name.split("/")[name.split("/").length - 1];
+            String msg = "fetch:" + path.split("/")[path.split("/").length - 1];
             msg += ":" + info.split(":")[1];
             if (F_create) {
                 msg += ":O_CREAT";
@@ -116,7 +126,7 @@ public class ClientFunc {
                     true);
             writer.println(msg);
             writer.flush();
-            int result = receive(name, socket2);
+            int result = receive(path, socket2);
             writer.close();
             System.out.println("result = " + result);
             if (result == -1) {
@@ -129,7 +139,7 @@ public class ClientFunc {
 
         /* 実際にファイルを開ける（作る） */
         File f = null;
-        f = new File(name);
+        f = new File(path);
         if (!f.exists()) {
             System.err.println("file not found");
             return -1;

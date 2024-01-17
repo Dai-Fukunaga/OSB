@@ -1,23 +1,10 @@
-import java.io.File;
 
 public class Client {
     public static void main(String[] args) {
         String username = args[0];
         ClientFunc cf = new ClientFunc(username);
         int i = 0;
-
-        File client = new File("client");
-        if (!client.exists()) {
-            client.mkdirs();
-        }
-        File dir = new File("client/" + username);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-        String fileName = "abc.txt";
-        String path = "./client/" + username + "/" + fileName;
-
-        i = cf.myOpen(path, MyFlags.O_RDWR | MyFlags.O_APPEND);
+        i = cf.myOpen("abc.txt", MyFlags.O_RDWR | MyFlags.O_APPEND);
         if (i == -1) {
             System.err.println("open err");
             return;
