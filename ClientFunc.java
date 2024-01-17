@@ -9,10 +9,8 @@ public class ClientFunc {
     /* <fd, "name:flag:"> */
     /* <fd, "name:flag:flag:"> */
 
-    private final int PORT = 8080;
-    private InetAddress addr;
-    private Socket socket1 = null;
-    private Socket socket2 = null;
+    private static final int PORT = 8080;
+    private static Socket socket = null;
 
     public ClientFunc(String username) {
         this.username = username;
@@ -34,42 +32,12 @@ public class ClientFunc {
         File f3 = new File("/dev/pts/0");
         MyFile file3 = new MyFile("stderr:O_WRONLY:", f3); /* stderrへのwriteはできる */
         fd_dict.put(2, file3);
-
-        try {
-            this.addr = InetAddress.getByName("localhost"); // IP アドレスへの変換
-            System.out.println("IP address: " + this.addr);
-            this.socket1 = new Socket(addr, PORT); // ソケットの生成
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-        // socketがnullなら待つ
-        while (this.socket1 == null) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                // System.out.println(e);
-            }
-        }
-        try {
-            this.addr = InetAddress.getByName("localhost"); // IP アドレスへの変換
-            System.out.println("IP address: " + this.addr);
-            this.socket2 = new Socket(addr, PORT); // ソケットの生成
-        } catch (IOException e) {
-            System.out.println(e);
-        }
-        // socketがnullなら待つ
-        while (this.socket2 == null) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                // System.out.println(e);
-            }
-        }
     }
 
     public int myOpen(String fileName, int flags) {
         /* String name is const */
 
+        connect();
         String path = "./client/" + username + "/" + fileName;
 
         /* flagsを2進数6桁埋めで */
@@ -122,11 +90,11 @@ public class ClientFunc {
             if (F_trunc) {
                 msg += ":O_TRUNC";
             }
-            PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket2.getOutputStream())),
+            PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
                     true);
             writer.println(msg);
             writer.flush();
-            int result = receive(path, socket2);
+            int result = receive(path, socket);
             writer.close();
             System.out.println("result = " + result);
             if (result == -1) {
@@ -160,6 +128,7 @@ public class ClientFunc {
     }
 
     public int myClose(int fd) {
+        connect();
         /* fd_dict */
         if (fd_dict.get(fd) == null) {
             System.err.println("not found fd = " + fd);
@@ -185,7 +154,7 @@ public class ClientFunc {
                 String msg = "save:" + name.split("/")[name.split("/").length - 1];
                 msg += ":" + info[1];
                 PrintWriter writer = new PrintWriter(
-                        new BufferedWriter(new OutputStreamWriter(socket1.getOutputStream())),
+                        new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
                         true);
                 writer.println(msg);
                 writer.flush();
@@ -201,7 +170,7 @@ public class ClientFunc {
                 byteArrayOutputStream.close();
                 byte[] fileContent = byteArrayOutputStream.toByteArray();
                 // ファイルの内容をサーバーに送信
-                OutputStream outputStream = socket1.getOutputStream();
+                OutputStream outputStream = socket.getOutputStream();
                 outputStream.write(fileContent);
                 outputStream.flush();
                 outputStream.close();
@@ -354,12 +323,12 @@ public class ClientFunc {
         return nbytes;
     }
 
-    public static int receive(String fileName, Socket socket) throws IOException {
-        if (socket.isClosed()) {
+    public static int receive(String fileName, Socket r_socket) throws IOException {
+        if (r_socket.isClosed()) {
             System.out.println("Socket is closed!!");
             return -1;
         }
-        DataInputStream inputStream = new DataInputStream(socket.getInputStream());
+        DataInputStream inputStream = new DataInputStream(r_socket.getInputStream());
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024];
         int bytesRead;
@@ -383,4 +352,25 @@ public class ClientFunc {
         fileOutputStream.close();
         return 0;
     }
+
+    public static void connect(){
+        try {
+            InetAddress addr = InetAddress.getByName("localhost"); // IP アドレスへの変換
+            System.out.println("IP address: " + addr);
+            socket = new Socket(addr, PORT); // ソケットの生成
+        } catch (IOException e) {
+            System.out.println(e);
+            return;
+        }
+        // socketがnullなら待つ
+        while (socket == null) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                return;
+                // System.out.println(e);
+            }
+        }
+    }
+
 }

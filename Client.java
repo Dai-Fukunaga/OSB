@@ -31,5 +31,20 @@ public class Client {
             System.err.println("close err");
             return;
         }
+
+        i = cf.myOpen("abc.txt", MyFlags.O_RDWR | MyFlags.O_APPEND);
+        if (i == -1) {
+            System.err.println("open err");
+            return;
+        }
+        buf[0] = "aaaa";
+        if (cf.myWrite(i, buf, buf[0].length()) != buf[0].length()) {
+            System.err.println("write err");
+            return;
+        }
+        if (cf.myClose(i) == -1) {
+            System.err.println("close err");
+            return;
+        }
     }
 }

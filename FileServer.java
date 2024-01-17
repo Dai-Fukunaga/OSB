@@ -72,6 +72,14 @@ class ServerThread extends Thread {
                 boolean F_trunc = false;
                 if (!rw.equals("O_RDONLY")) {
                     System.err.println("not readonly");
+                    /* wait for 50ms */
+                    /* これがないと、close時のusedからの削除する前に、openしてしまう */
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                        System.err.println(e);
+                        return;
+                    }
                     if (FileServer.containsUsed(file_name)) {
                         System.err.println("permission denied");
                         String error_message = "permission denied";
