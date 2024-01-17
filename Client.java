@@ -1,23 +1,10 @@
-import java.io.File;
 
 public class Client {
     public static void main(String[] args) {
         String username = args[0];
         ClientFunc cf = new ClientFunc(username);
         int i = 0;
-
-        File client = new File("client");
-        if (!client.exists()) {
-            client.mkdirs();
-        }
-        File dir = new File("client/" + username);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-        String fileName = "abc.txt";
-        String path = "./client/" + username + "/" + fileName;
-
-        i = cf.myOpen(path, MyFlags.O_RDWR | MyFlags.O_APPEND);
+        i = cf.myOpen("A/abc.txt", MyFlags.O_RDWR | MyFlags.O_APPEND);
         if (i == -1) {
             System.err.println("open err");
             return;
@@ -36,6 +23,21 @@ public class Client {
         System.out.println("buf = " + buf[0]);
 
         buf[0] = "hoge";
+        if (cf.myWrite(i, buf, buf[0].length()) != buf[0].length()) {
+            System.err.println("write err");
+            return;
+        }
+        if (cf.myClose(i) == -1) {
+            System.err.println("close err");
+            return;
+        }
+
+        i = cf.myOpen("./B/def.txt", MyFlags.O_RDWR | MyFlags.O_APPEND);
+        if (i == -1) {
+            System.err.println("open err");
+            return;
+        }
+        buf[0] = "aaaa";
         if (cf.myWrite(i, buf, buf[0].length()) != buf[0].length()) {
             System.err.println("write err");
             return;
