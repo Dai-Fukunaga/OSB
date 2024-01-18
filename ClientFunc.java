@@ -364,12 +364,28 @@ public class ClientFunc {
             byteArrayOutputStream.write(buffer, 0, bytesRead);
         }
         inputStream.close();
-        byte[] fileContent = byteArrayOutputStream.toByteArray();
-        String error_message = "permission denied";
-        byte[] error_message_bytes = error_message.getBytes();
-        if (Arrays.equals(fileContent, error_message_bytes) == true) {
-            System.err.println("permission denied | fileContent is \"permission denied\"");
-            return -1;
+        byte[] fileContent = null;
+        byte[] messageContent = byteArrayOutputStream.toByteArray();
+        if ((messageContent.length == 1) && (messageContent[0] != ("s".getBytes())[0])) {
+            if (messageContent[0] == ("p".getBytes())[0]) {
+                System.err.println("permission denied");
+                return -1;
+            } else if (messageContent[0] == ("f".getBytes())[0]) {
+                System.err.println("file not found");
+                return -1;
+            } else if (messageContent[0] == ("e".getBytes())[0]) {
+                System.err.println("error");
+                return -1;
+            } else if (messageContent[0] == ("c".getBytes())[0]) {
+                System.out.println("failed to create file");
+                return -1;
+            } else {
+                System.err.println("Bad message");
+                return -1;
+            }
+        } else {
+            /* fileContentの[0]を無くす */
+            fileContent = Arrays.copyOfRange(messageContent, 1, messageContent.length);
         }
 
         // 受信したファイルの内容をファイルに保存
@@ -396,6 +412,7 @@ public class ClientFunc {
             socket = new Socket(addr, PORT); // ソケットの生成
         } catch (IOException e) {
             System.out.println(e);
+            System.out.println(serverName + " is not running!!");
             return -1;
         }
         // socketがnullなら待つ
