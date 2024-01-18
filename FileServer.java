@@ -7,11 +7,11 @@ public class FileServer {
 
     public static void main(String[] args) throws IOException {
         int PORT = Integer.parseInt(args[0]);
-        String server_name = "";
+        String serverName = "";
         if (PORT == 8080) {
-            server_name = "A";
+            serverName = "A";
         } else if (PORT == 8081) {
-            server_name = "B";
+            serverName = "B";
         } else {
             System.err.println("Bad port number = " + PORT);
             return;
@@ -21,7 +21,7 @@ public class FileServer {
             System.out.println("Wait for the connection...");
             while (true) {
                 Socket socket = s.accept();
-                new ServerThread(socket, server_name).start();
+                new ServerThread(socket, serverName).start();
                 System.out.println("Waiting for new connection...");
             }
         } catch (Error e) {
@@ -52,27 +52,27 @@ public class FileServer {
 
 class ServerThread extends Thread {
     private Socket socket;
-    private String server_name;
+    private String serverName;
 
-    public ServerThread(Socket socket, String server_name) {
+    public ServerThread(Socket socket, String serverName) {
         this.socket = socket;
-        this.server_name = server_name;
+        this.serverName = serverName;
     }
 
     public void run() {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            String line;
-            line = reader.readLine();
-            System.out.println(line);
+            String line = reader.readLine();
+            System.out.println("[mes] " + line);
             String[] msg = line.split(":");
             String file_name = msg[1];
             String rw = msg[2];
             if (msg[0].equals("save")) {
                 // System.out.println(rw); // debug
                 /* クライアントからfileを受け取る */
-                if (receive(file_name, socket, server_name) == -1) {
+                if (receive(file_name, socket, serverName) == -1) {
                     System.err.println("Receive error");
+                    System.err.println("this error is not send to Client");
                 }
                 if (!rw.equals("O_RDONLY")) {
                     FileServer.removeUsed(file_name);
@@ -116,9 +116,9 @@ class ServerThread extends Thread {
                 }
                 /* 実際にファイルを開ける（作る） */
                 File f = null;
-                String file = server_name + "/" + file_name;
+                String serverPlusFile = serverName + "/" + file_name;
                 try {
-                    f = new File(file);
+                    f = new File(serverPlusFile);
                     if (!f.exists() && F_create) {
                         if (!f.createNewFile()) {
                             System.err.println("failed to create file");
@@ -146,7 +146,7 @@ class ServerThread extends Thread {
                     send(outputStream, "e".getBytes());
                     return;
                 }
-                FileInputStream fileInputStream = new FileInputStream(file);
+                FileInputStream fileInputStream = new FileInputStream(serverPlusFile);
                 byte[] buffer = new byte[1024];
                 int bytesRead;
                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -156,8 +156,7 @@ class ServerThread extends Thread {
                 fileInputStream.close();
                 byteArrayOutputStream.close();
                 byte[] fileContent = byteArrayOutputStream.toByteArray();
-                String success = "s";
-                byte[] success_bytes = success.getBytes();
+                byte[] success_bytes = "s".getBytes();
                 /* messageContentをsuccess_bytes + fileContentにする */
                 byte[] messageContent = new byte[success_bytes.length + fileContent.length];
                 System.arraycopy(success_bytes, 0, messageContent, 0, success_bytes.length);
@@ -181,7 +180,7 @@ class ServerThread extends Thread {
         }
     }
 
-    public static int receive(String fileName, Socket socket, String server_name) throws IOException {
+    public static int receive(String fileName, Socket socket, String serverName) throws IOException {
         if (socket.isClosed()) {
             System.out.println("Socket is closed!!");
             return -1;
@@ -197,9 +196,8 @@ class ServerThread extends Thread {
         inputStream.close();
         byte[] fileContent = byteArrayOutputStream.toByteArray();
 
-        // 受信したファイルの内容をファイルに保存
-        // file_nameに保存
-        fileName = server_name + "/" + fileName;
+        // 受信したファイルの内容をfileNameに保存
+        fileName = serverName + "/" + fileName;
         FileOutputStream fileOutputStream = new FileOutputStream(fileName);
         fileOutputStream.write(fileContent);
         fileOutputStream.close();
