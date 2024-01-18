@@ -3,9 +3,9 @@ all:
 	javac FileServer.java
 clean:
 	rm -f *.class
-	rm -rf server
+	rm -rf client/*
 fclean:
 	rm -f *.class
 	rm -rf client/*
-	rm -rf server
-	rm -f *.txt
+	rm -r A/*
+	rm -r B/*
