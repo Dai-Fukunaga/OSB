@@ -6,8 +6,8 @@ import java.net.Socket;
 public class ClientFunc {
     private String username = "";
     private static Map<Integer, MyFile> fd_dict = new HashMap<>();
-    /* <fd, "name:flag:"> */
-    /* <fd, "name:flag:flag:"> */
+    /* <fd, "path:flag:"> */
+    /* <fd, "path:flag:flag:"> */
 
     private static Socket socket = null;
 
@@ -42,7 +42,7 @@ public class ClientFunc {
     }
 
     public int myOpen(String fileName, int flags) {
-        /* String name is const */
+        /* String fileName is const */
 
         /* 最初に./があるかも　→　削除 */
         if (fileName.charAt(0) == '.') {
@@ -56,12 +56,13 @@ public class ClientFunc {
             System.err.println("Bad file name");
             return -1;
         }
-        String selected_sever = fileName.split("/")[0];
-        if (connect(selected_sever) == -1) {
+        String selectSever = fileName.split("/")[0];
+        if (connect(selectSever) == -1) {
             return -1;
         }
         String path = "./client/" + username + "/" + fileName;
-        /*  ./client/taka/A/abc.txt  */
+        /* fileName = A/abc.txt */
+        /* path = ./client/username/A/abc.txt */
 
         /* flagsを2進数6桁埋めで */
         String flags_bin = Integer.toBinaryString(flags);
@@ -83,9 +84,9 @@ public class ClientFunc {
         }
 
         /* info */
-        System.out.print("file_name = " + path + "\t\t");
+        System.out.print("Open: path=" + path + "\t\t");
         String info = path + ":";
-        System.out.print("flags_bin = " + flags_bin + "\t");
+        System.out.print("flags_bin =" + flags_bin + "\t");
 
         Boolean F_create = false;
         Boolean F_trunc = false;
@@ -101,7 +102,6 @@ public class ClientFunc {
                 }
             }
         }
-
         System.out.println();
 
         try {
@@ -117,12 +117,11 @@ public class ClientFunc {
                     true);
             writer.println(msg);
             writer.flush();
-            int result = receive(path, socket);
-            writer.close();
-            System.out.println("result = " + result);
-            if (result == -1) {
+            if (receive(path, socket) == -1) {
+                System.err.println("receive error");
                 return -1;
             }
+            writer.close();
         } catch (IOException e) {
             System.err.println(e);
             return -1;
@@ -156,13 +155,13 @@ public class ClientFunc {
             System.err.println("not found fd = " + fd);
             return -1;
         }
-        /* <fd, "name:mode:flag:"> */
+        /* <fd, "path:mode:flag:"> */
         String[] info = fd_dict.get(fd).info.split(":");
-        String name = info[0];
-        System.out.println("file_name = " + name);
-        /* name = ./client/taka/A/abc.txt */
-        String selected_sever = name.split("/")[3];
-        if (connect(selected_sever) == -1) {
+        String path = info[0];
+        System.out.println("Close: path=" + path);
+        /* path = ./client/username/A/abc.txt */
+        String selectSever = path.split("/")[3];
+        if (connect(selectSever) == -1) {
             return -1;
         }
         String[] flags = new String[info.length - 1];
@@ -178,7 +177,7 @@ public class ClientFunc {
             }
 
             try {
-                String msg = "save:" + name.split("/")[name.split("/").length - 1];
+                String msg = "save:" + path.split("/")[path.split("/").length - 1];
                 msg += ":" + info[1];
                 PrintWriter writer = new PrintWriter(
                         new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
@@ -223,10 +222,10 @@ public class ClientFunc {
             System.err.println("not found fd = " + fd);
             return -1;
         }
-        /* <fd, "name:mode:flag:"> */
+        /* <fd, "path:mode:flag:"> */
         String[] info = fd_dict.get(fd).info.split(":");
-        String name = info[0];
-        System.out.println("file_name = " + name);
+        String path = info[0];
+        System.out.println("Read: path=" + path);
         String[] flags = new String[info.length - 1];
         for (int i = 1; i < info.length; i++) {
             flags[i - 1] = info[i];
@@ -265,10 +264,10 @@ public class ClientFunc {
             System.err.println("not found fd = " + fd);
             return -1;
         }
-        /* <fd, "name:mode:flag:"> */
+        /* <fd, "path:mode:flag:"> */
         String[] info = fd_dict.get(fd).info.split(":");
-        String name = info[0];
-        System.out.println("file_name = " + name);
+        String path = info[0];
+        System.out.println("Write: path=" + path);
         String[] flags = new String[info.length - 1];
         for (int i = 1; i < info.length; i++) {
             flags[i - 1] = info[i];
@@ -364,16 +363,32 @@ public class ClientFunc {
             byteArrayOutputStream.write(buffer, 0, bytesRead);
         }
         inputStream.close();
-        byte[] fileContent = byteArrayOutputStream.toByteArray();
-        String error_message = "permission denied";
-        byte[] error_message_bytes = error_message.getBytes();
-        if (Arrays.equals(fileContent, error_message_bytes) == true) {
-            System.err.println("permission denied | fileContent is \"permission denied\"");
-            return -1;
+        byte[] fileContent = null;
+        byte[] messageContent = byteArrayOutputStream.toByteArray();
+        if ((messageContent.length == 1) && (messageContent[0] != ("s".getBytes())[0])) {
+            if (messageContent[0] == ("p".getBytes())[0]) {
+                System.err.println("permission denied");
+                return -1;
+            } else if (messageContent[0] == ("f".getBytes())[0]) {
+                System.err.println("file not found");
+                return -1;
+            } else if (messageContent[0] == ("e".getBytes())[0]) {
+                System.err.println("error");
+                return -1;
+            } else if (messageContent[0] == ("c".getBytes())[0]) {
+                System.out.println("failed to create file");
+                return -1;
+            } else {
+                System.err.println("Bad message");
+                return -1;
+            }
+        } else {
+            /* fileContentの[0]を無くす */
+            fileContent = Arrays.copyOfRange(messageContent, 1, messageContent.length);
         }
 
         // 受信したファイルの内容をファイルに保存
-        // file_nameに保存
+        // fileNameに保存
         FileOutputStream fileOutputStream = new FileOutputStream(fileName);
         fileOutputStream.write(fileContent);
         fileOutputStream.close();
@@ -392,10 +407,11 @@ public class ClientFunc {
         }
         try {
             InetAddress addr = InetAddress.getByName("localhost"); // IP アドレスへの変換
-            System.out.println("IP address: " + addr);
+            // System.out.println("IP address: " + addr); // debug
             socket = new Socket(addr, PORT); // ソケットの生成
         } catch (IOException e) {
             System.out.println(e);
+            System.out.println(serverName + " is not running!!");
             return -1;
         }
         // socketがnullなら待つ
@@ -403,8 +419,8 @@ public class ClientFunc {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
+                System.out.println(e);
                 return -1;
-                // System.out.println(e);
             }
         }
         return 0;

@@ -32,7 +32,7 @@ public class Client {
             return;
         }
 
-        i = cf.myOpen("./B/def.txt", MyFlags.O_RDWR | MyFlags.O_APPEND);
+        i = cf.myOpen("./B/def.txt", MyFlags.O_RDWR);
         if (i == -1) {
             System.err.println("open err");
             return;
