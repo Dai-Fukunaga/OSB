@@ -2,7 +2,7 @@
 This is a repository for Operating System B
 
 ## Authors
-Takatoshi Nakaguchi, Nakajima, Dai Fukunaga
+Takatoshi Nakaguchi, Shusaku Nakajima, Dai Fukunaga
 
 ## How to use
 ### Compile
